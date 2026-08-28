@@ -1,0 +1,177 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  background: #0f172a;
+  color: #f8fafc;
+
+  display: flex;
+  justify-content: center;
+}
+
+.app {
+  width: 100%;
+  max-width: 500px;
+
+  padding: 30px 20px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+header h1 {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+header p {
+  color: #94a3b8;
+}
+
+.screen {
+  width: 100%;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.mode-card {
+  padding: 25px;
+  border-radius: 20px;
+
+  margin-bottom: 20px;
+
+  background: #1e293b;
+
+  border: 1px solid #334155;
+}
+
+.icon {
+  font-size: 40px;
+  margin-bottom: 15px;
+}
+
+.mode-card h2 {
+  margin-bottom: 8px;
+}
+
+.mode-card p {
+  color: #94a3b8;
+  line-height: 1.5;
+
+  margin-bottom: 20px;
+}
+
+button {
+  width: 100%;
+
+  border: none;
+  border-radius: 12px;
+
+  padding: 14px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  background: #3b82f6;
+  color: white;
+
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+.entertainment-card button {
+  background: #8b5cf6;
+}
+
+.cooldown {
+  margin-top: 12px;
+  margin-bottom: 0 !important;
+
+  color: #f59e0b !important;
+}
+
+.back-button {
+  width: auto;
+  background: transparent;
+  padding: 5px 0;
+  margin-bottom: 30px;
+
+  color: #94a3b8;
+}
+
+.time-grid {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 15px;
+
+  margin-top: 25px;
+}
+
+.time-button {
+  background: #334155;
+}
+
+.session-screen {
+  text-align: center;
+}
+
+#sessionScreen {
+  text-align: center;
+}
+
+.big-icon {
+  font-size: 70px;
+  margin: 30px 0 15px;
+}
+
+#sessionDescription {
+  color: #94a3b8;
+  margin-top: 10px;
+}
+
+.timer {
+  font-size: 64px;
+  font-weight: 700;
+
+  margin: 40px 0;
+}
+
+.secondary-button {
+  background: #334155;
+}
+
+#blockedScreen {
+  text-align: center;
+}
+
+#blockedScreen p {
+  color: #94a3b8;
+  margin: 10px 0;
+}
