@@ -4,10 +4,9 @@
   <meta charset="UTF-8">
 
   <meta name="viewport"
-        content="width=device-width, initial-scale=1.0,
-                 viewport-fit=cover">
+        content="width=device-width, initial-scale=1.0">
 
-  <meta name="theme-color" content="#111827">
+  <meta name="theme-color" content="#0f172a">
 
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
@@ -17,142 +16,269 @@
 
 <body>
 
-  <main class="app">
+<main class="app">
 
-    <header>
-      <h1>FocusTube</h1>
-      <p id="statusText">Choose how you're using YouTube.</p>
-    </header>
-
-    <!-- HOME -->
-    <section id="homeScreen" class="screen">
-
-      <div class="mode-card work-card">
-        <div class="icon">📚</div>
-
-        <h2>Work</h2>
-
-        <p>
-          Unlimited access for studying, learning and productive work.
-        </p>
-
-        <button id="workButton">
-          Start Work
-        </button>
-      </div>
+  <header>
+    <h1>FocusTube</h1>
+    <p id="statusText">
+      Choose how you're using YouTube.
+    </p>
+  </header>
 
 
-      <div class="mode-card entertainment-card">
-        <div class="icon">🎮</div>
+  <!-- HOME -->
 
-        <h2>Entertainment</h2>
+  <section id="homeScreen" class="screen">
 
-        <p>
-          Choose a limited entertainment session.
-        </p>
+    <div class="mode-card work-card">
 
-        <button id="entertainmentButton">
-          Start Entertainment
-        </button>
+      <div class="icon">📚</div>
 
-        <p id="cooldownText" class="cooldown"></p>
-      </div>
-
-    </section>
-
-
-    <!-- ENTERTAINMENT SETUP -->
-    <section id="entertainmentSetup" class="screen hidden">
-
-      <button class="back-button" id="backButton">
-        ← Back
-      </button>
-
-      <h2>How long?</h2>
+      <h2>Work</h2>
 
       <p>
-        Choose your entertainment time.
+        Unlimited access for studying,
+        learning and productive work.
       </p>
 
-      <div class="time-grid">
-
-        <button class="time-button" data-minutes="1">
-          1 min
-        </button>
-
-        <button class="time-button" data-minutes="5">
-          5 min
-        </button>
-
-        <button class="time-button" data-minutes="10">
-          10 min
-        </button>
-
-        <button class="time-button" data-minutes="15">
-          15 min
-        </button>
-
-      </div>
-
-    </section>
-
-
-    <!-- ACTIVE SESSION -->
-    <section id="sessionScreen" class="screen hidden">
-
-      <div id="sessionIcon" class="big-icon">
-        📚
-      </div>
-
-      <h2 id="sessionTitle">
-        Work Mode
-      </h2>
-
-      <p id="sessionDescription">
-        You have unlimited work access.
-      </p>
-
-      <div id="timer" class="timer">
-  00:00
-      </div>
-
-      <button id="exitButton" class="secondary-button">
-        End Session
-      </button>
-
-    </section>
-
-
-    <!-- BLOCKED -->
-    <section id="blockedScreen" class="screen hidden">
-
-      <div class="big-icon">
-        🚫
-      </div>
-
-      <h2>Entertainment Locked</h2>
-
-      <p>
-        Your entertainment session has ended.
-      </p>
-
-      <div id="cooldownTimer" class="timer">
-        30:00
-      </div>
-
-      <p>
-        Work mode is still available.
-      </p>
-
-      <button id="blockedWorkButton">
+      <button id="workButton">
         Start Work
       </button>
 
-    </section>
+    </div>
 
-  </main>
 
-  <script src="app.js"></script>
+    <div class="mode-card entertainment-card">
+
+      <div class="icon">🎮</div>
+
+      <h2>Entertainment</h2>
+
+      <p>
+        Choose a limited entertainment session.
+      </p>
+
+      <button id="entertainmentButton">
+        Start Entertainment
+      </button>
+
+      <p id="cooldownText" class="cooldown"></p>
+
+    </div>
+
+
+    <!-- AI TEST -->
+
+    <div class="mode-card">
+
+      <div class="icon">🤖</div>
+
+      <h2>AI Test</h2>
+
+      <p>
+        Test FocusTube's YouTube classifier.
+      </p>
+
+      <button id="aiTestButton">
+        Test AI
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- ENTERTAINMENT SETUP -->
+
+  <section id="entertainmentSetup"
+           class="screen hidden">
+
+    <button class="back-button" id="backButton">
+      ← Back
+    </button>
+
+    <h2>How long?</h2>
+
+    <p>
+      Choose your entertainment time.
+    </p>
+
+    <div class="time-grid">
+
+      <button class="time-button"
+              data-minutes="1">
+        1 min
+      </button>
+
+      <button class="time-button"
+              data-minutes="5">
+        5 min
+      </button>
+
+      <button class="time-button"
+              data-minutes="10">
+        10 min
+      </button>
+
+      <button class="time-button"
+              data-minutes="15">
+        15 min
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- ACTIVE SESSION -->
+
+  <section id="sessionScreen"
+           class="screen hidden">
+
+    <div id="sessionIcon"
+         class="big-icon">
+      📚
+    </div>
+
+    <h2 id="sessionTitle">
+      Work Mode
+    </h2>
+
+    <p id="sessionDescription">
+      Work mode is active.
+    </p>
+
+    <div id="timer"
+         class="timer">
+      00:00
+    </div>
+
+    <button id="exitButton"
+            class="secondary-button">
+      End Session
+    </button>
+
+  </section>
+
+
+  <!-- BLOCKED -->
+
+  <section id="blockedScreen"
+           class="screen hidden">
+
+    <div class="big-icon">
+      🚫
+    </div>
+
+    <h2>
+      Entertainment Locked
+    </h2>
+
+    <p>
+      Your entertainment session has ended.
+    </p>
+
+    <div id="cooldownTimer"
+         class="timer">
+      30:00
+    </div>
+
+    <p>
+      Work mode is still available.
+    </p>
+
+    <button id="blockedWorkButton">
+      Start Work
+    </button>
+
+  </section>
+
+
+  <!-- AI TEST SCREEN -->
+
+  <section id="aiScreen"
+           class="screen hidden">
+
+    <button class="back-button"
+            id="aiBackButton">
+      ← Back
+    </button>
+
+    <h2>🤖 Test FocusTube AI</h2>
+
+    <p>
+      Enter a YouTube video's title and
+      description.
+    </p>
+
+
+    <label for="videoTitle">
+      Video title
+    </label>
+
+    <input
+      id="videoTitle"
+      type="text"
+      placeholder="e.g. Class 10 Biology - Life Processes"
+    >
+
+
+    <label for="videoDescription">
+      Description
+    </label>
+
+    <textarea
+      id="videoDescription"
+      rows="6"
+      placeholder="Paste the YouTube description here..."
+    ></textarea>
+
+
+    <button id="classifyButton">
+      Classify Video
+    </button>
+
+
+    <div id="aiLoading"
+         class="hidden">
+
+      <div class="big-icon">
+        🤔
+      </div>
+
+      <p>
+        FocusTube AI is thinking...
+      </p>
+
+    </div>
+
+
+    <div id="aiResult"
+         class="ai-result hidden">
+
+      <div id="resultIcon"
+           class="big-icon">
+        🤖
+      </div>
+
+      <h2 id="resultClassification">
+        WORK
+      </h2>
+
+      <p id="resultConfidence">
+        Confidence: 0%
+      </p>
+
+      <p id="resultReason">
+      </p>
+
+    </div>
+
+  </section>
+
+</main>
+
+<script src="app.js"></script>
 
 </body>
 </html>
