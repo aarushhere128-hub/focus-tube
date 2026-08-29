@@ -1,6 +1,9 @@
 const STORAGE_KEY = "focustube_state";
 const COOLDOWN_MS = 30 * 60 * 1000;
 
+const AI_API_URL =
+  "https://focustube-api.aarushhere128.workers.dev/";
+
 let state = loadState();
 let timerInterval = null;
 
@@ -36,7 +39,6 @@ function loadState() {
     };
 
   } catch (error) {
-    console.error("State loading failed:", error);
     return getDefaultState();
   }
 }
@@ -66,6 +68,9 @@ const sessionScreen =
 const blockedScreen =
   document.getElementById("blockedScreen");
 
+const aiScreen =
+  document.getElementById("aiScreen");
+
 const statusText =
   document.getElementById("statusText");
 
@@ -78,37 +83,67 @@ const cooldownTimer =
 const cooldownText =
   document.getElementById("cooldownText");
 
+const videoTitle =
+  document.getElementById("videoTitle");
+
+const videoDescription =
+  document.getElementById("videoDescription");
+
+const classifyButton =
+  document.getElementById("classifyButton");
+
+const aiLoading =
+  document.getElementById("aiLoading");
+
+const aiResult =
+  document.getElementById("aiResult");
+
+const resultClassification =
+  document.getElementById("resultClassification");
+
+const resultConfidence =
+  document.getElementById("resultConfidence");
+
+const resultReason =
+  document.getElementById("resultReason");
+
+const resultIcon =
+  document.getElementById("resultIcon");
+
 
 // ===============================
 // SCREEN CONTROL
 // ===============================
 
 function hideAllScreens() {
+
   homeScreen.classList.add("hidden");
+
   entertainmentSetup.classList.add("hidden");
+
   sessionScreen.classList.add("hidden");
+
   blockedScreen.classList.add("hidden");
+
+  aiScreen.classList.add("hidden");
 }
 
 
 function showScreen(screen) {
+
   hideAllScreens();
+
   screen.classList.remove("hidden");
 }
 
 
 // ===============================
-// WORK
+// WORK MODE
 // ===============================
 
 function startWork() {
 
   clearInterval(timerInterval);
-
-  /*
-   * Only create a timestamp if we aren't
-   * already in Work mode.
-   */
 
   if (
     state.mode !== "work" ||
@@ -119,22 +154,21 @@ function startWork() {
 
   state.mode = "work";
 
-  /*
-   * Entertainment session is definitely over.
-   *
-   * BUT cooldown is preserved.
-   */
-
   state.entertainmentEndsAt = null;
 
   saveState();
 
-  document.getElementById("sessionIcon").textContent = "📚";
+  document.getElementById(
+    "sessionIcon"
+  ).textContent = "📚";
 
-  document.getElementById("sessionTitle").textContent =
-    "Work Mode";
+  document.getElementById(
+    "sessionTitle"
+  ).textContent = "Work Mode";
 
-  document.getElementById("sessionDescription").textContent =
+  document.getElementById(
+    "sessionDescription"
+  ).textContent =
     "Unlimited work time.";
 
   statusText.textContent =
@@ -171,7 +205,6 @@ function updateWorkStopwatch() {
 
   timer.textContent =
     formatTime(elapsed);
-
 }
 
 
@@ -196,7 +229,7 @@ function openEntertainmentSetup() {
 
 
 // ===============================
-// ENTERTAINMENT
+// ENTERTAINMENT MODE
 // ===============================
 
 function startEntertainment(minutes) {
@@ -221,12 +254,18 @@ function startEntertainment(minutes) {
 
   saveState();
 
-  document.getElementById("sessionIcon").textContent = "🎮";
+  document.getElementById(
+    "sessionIcon"
+  ).textContent = "🎮";
 
-  document.getElementById("sessionTitle").textContent =
+  document.getElementById(
+    "sessionTitle"
+  ).textContent =
     "Entertainment Mode";
 
-  document.getElementById("sessionDescription").textContent =
+  document.getElementById(
+    "sessionDescription"
+  ).textContent =
     `${minutes} minute session`;
 
   statusText.textContent =
@@ -254,7 +293,8 @@ function startEntertainmentTimer() {
 function updateEntertainmentTimer() {
 
   const remaining =
-    state.entertainmentEndsAt - Date.now();
+    state.entertainmentEndsAt -
+    Date.now();
 
   if (remaining <= 0) {
 
@@ -282,14 +322,21 @@ function endEntertainment() {
   saveState();
 
   showBlockedScreen();
-
-  startCooldownTimer();
 }
 
 
 // ===============================
-// BLOCKED
+// COOLDOWN
 // ===============================
+
+function isCooldownActive() {
+
+  return (
+    state.cooldownEndsAt !== null &&
+    Date.now() < state.cooldownEndsAt
+  );
+}
+
 
 function showBlockedScreen() {
 
@@ -308,15 +355,6 @@ function startCooldownTimer() {
 
   updateCooldown();
 
-  /*
-   * This interval only exists while the
-   * PWA is open.
-   *
-   * The actual cooldown is based on the
-   * timestamp, so closing the PWA doesn't
-   * pause it.
-   */
-
   timerInterval = setInterval(
     updateCooldown,
     1000
@@ -327,17 +365,14 @@ function startCooldownTimer() {
 function updateCooldown() {
 
   if (!state.cooldownEndsAt) {
-
     cooldownTimer.textContent = "00:00";
-
     cooldownText.textContent = "";
-
     return;
   }
 
   const remaining =
-    state.cooldownEndsAt - Date.now();
-
+    state.cooldownEndsAt -
+    Date.now();
 
   if (remaining <= 0) {
 
@@ -362,7 +397,6 @@ function updateCooldown() {
     return;
   }
 
-
   const formatted =
     formatTime(remaining);
 
@@ -374,17 +408,8 @@ function updateCooldown() {
 }
 
 
-function isCooldownActive() {
-
-  return (
-    state.cooldownEndsAt !== null &&
-    Date.now() < state.cooldownEndsAt
-  );
-}
-
-
 // ===============================
-// EXIT
+// EXIT SESSION
 // ===============================
 
 function exitSession() {
@@ -397,12 +422,9 @@ function exitSession() {
 
     state.workStartedAt = null;
 
-  } else if (state.mode === "entertainment") {
-
-    /*
-     * Manually ending entertainment starts
-     * the cooldown.
-     */
+  } else if (
+    state.mode === "entertainment"
+  ) {
 
     endEntertainment();
 
@@ -442,7 +464,8 @@ function updateHomeCooldown() {
   }
 
   const remaining =
-    state.cooldownEndsAt - Date.now();
+    state.cooldownEndsAt -
+    Date.now();
 
   cooldownText.textContent =
     `Entertainment cooldown: ${formatTime(remaining)}`;
@@ -450,7 +473,159 @@ function updateHomeCooldown() {
 
 
 // ===============================
-// TIME
+// AI SCREEN
+// ===============================
+
+function openAIScreen() {
+
+  clearInterval(timerInterval);
+
+  showScreen(aiScreen);
+
+  statusText.textContent =
+    "Test FocusTube's AI classifier.";
+
+  aiLoading.classList.add("hidden");
+
+  aiResult.classList.add("hidden");
+}
+
+
+async function classifyVideo() {
+
+  const title =
+    videoTitle.value.trim();
+
+  const description =
+    videoDescription.value.trim();
+
+
+  if (!title && !description) {
+
+    alert(
+      "Please enter a video title or description."
+    );
+
+    return;
+  }
+
+
+  classifyButton.disabled = true;
+
+  aiResult.classList.add("hidden");
+
+  aiLoading.classList.remove("hidden");
+
+
+  try {
+
+    const response =
+      await fetch(
+        AI_API_URL,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            title: title,
+            description: description
+          })
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "AI request failed."
+      );
+    }
+
+
+    displayAIResult(data);
+
+
+  } catch (error) {
+
+    aiLoading.classList.add("hidden");
+
+    alert(
+      "AI connection failed:\n\n" +
+      error.message
+    );
+
+
+  } finally {
+
+    classifyButton.disabled = false;
+
+  }
+}
+
+
+function displayAIResult(data) {
+
+  aiLoading.classList.add("hidden");
+
+  aiResult.classList.remove("hidden");
+
+
+  const classification =
+    String(
+      data.classification ||
+      "UNCERTAIN"
+    ).toUpperCase();
+
+
+  const confidence =
+    Number(
+      data.confidence || 0
+    );
+
+
+  resultClassification.textContent =
+    classification;
+
+
+  resultConfidence.textContent =
+    `Confidence: ${Math.round(
+      confidence * 100
+    )}%`;
+
+
+  resultReason.textContent =
+    data.reason ||
+    "No reason provided.";
+
+
+  if (classification === "WORK") {
+
+    resultIcon.textContent = "📚";
+
+  } else if (
+    classification === "ENTERTAINMENT"
+  ) {
+
+    resultIcon.textContent = "🎮";
+
+  } else {
+
+    resultIcon.textContent = "❓";
+  }
+}
+
+
+// ===============================
+// TIME FORMAT
 // ===============================
 
 function formatTime(milliseconds) {
@@ -458,16 +633,23 @@ function formatTime(milliseconds) {
   const totalSeconds =
     Math.max(
       0,
-      Math.floor(milliseconds / 1000)
+      Math.floor(
+        milliseconds / 1000
+      )
     );
 
+
   const hours =
-    Math.floor(totalSeconds / 3600);
+    Math.floor(
+      totalSeconds / 3600
+    );
+
 
   const minutes =
     Math.floor(
       (totalSeconds % 3600) / 60
     );
+
 
   const seconds =
     totalSeconds % 60;
@@ -482,7 +664,6 @@ function formatTime(milliseconds) {
       ":" +
       String(seconds).padStart(2, "0")
     );
-
   }
 
 
@@ -539,6 +720,30 @@ document
 
 
 document
+  .getElementById("aiTestButton")
+  .addEventListener(
+    "click",
+    openAIScreen
+  );
+
+
+document
+  .getElementById("aiBackButton")
+  .addEventListener(
+    "click",
+    showHome
+  );
+
+
+document
+  .getElementById("classifyButton")
+  .addEventListener(
+    "click",
+    classifyVideo
+  );
+
+
+document
   .querySelectorAll(".time-button")
   .forEach(button => {
 
@@ -547,10 +752,11 @@ document
       () => {
 
         const minutes =
-          Number(button.dataset.minutes);
+          Number(
+            button.dataset.minutes
+          );
 
         startEntertainment(minutes);
-
       }
     );
 
@@ -563,21 +769,24 @@ document
 
 function initialize() {
 
-  /*
-   * ACTIVE WORK
-   */
+  // Active Work
 
   if (
     state.mode === "work" &&
     state.workStartedAt
   ) {
 
-    document.getElementById("sessionIcon").textContent = "📚";
+    document.getElementById(
+      "sessionIcon"
+    ).textContent = "📚";
 
-    document.getElementById("sessionTitle").textContent =
-      "Work Mode";
+    document.getElementById(
+      "sessionTitle"
+    ).textContent = "Work Mode";
 
-    document.getElementById("sessionDescription").textContent =
+    document.getElementById(
+      "sessionDescription"
+    ).textContent =
       "Unlimited work time.";
 
     statusText.textContent =
@@ -591,9 +800,7 @@ function initialize() {
   }
 
 
-  /*
-   * ACTIVE ENTERTAINMENT
-   */
+  // Active Entertainment
 
   if (
     state.mode === "entertainment" &&
@@ -605,12 +812,18 @@ function initialize() {
       state.entertainmentEndsAt
     ) {
 
-      document.getElementById("sessionIcon").textContent = "🎮";
+      document.getElementById(
+        "sessionIcon"
+      ).textContent = "🎮";
 
-      document.getElementById("sessionTitle").textContent =
+      document.getElementById(
+        "sessionTitle"
+      ).textContent =
         "Entertainment Mode";
 
-      document.getElementById("sessionDescription").textContent =
+      document.getElementById(
+        "sessionDescription"
+      ).textContent =
         "Entertainment session active.";
 
       statusText.textContent =
@@ -623,9 +836,8 @@ function initialize() {
       return;
     }
 
-    /*
-     * Session expired while app was closed.
-     */
+
+    // Entertainment expired while closed
 
     endEntertainment();
 
@@ -633,9 +845,7 @@ function initialize() {
   }
 
 
-  /*
-   * COOLDOWN
-   */
+  // Cooldown
 
   if (
     state.mode === "blocked" &&
@@ -648,9 +858,7 @@ function initialize() {
   }
 
 
-  /*
-   * Nothing active.
-   */
+  // Nothing active
 
   state.mode = "none";
 
@@ -679,4 +887,4 @@ if ("serviceWorker" in navigator) {
       );
 
     });
-}
+      }
