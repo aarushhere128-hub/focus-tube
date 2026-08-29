@@ -1,28 +1,20 @@
 const STORAGE_KEY = "focustube_state";
-
 const COOLDOWN_MS = 30 * 60 * 1000;
+
+let state = loadState();
+let timerInterval = null;
 
 
 // ===============================
 // STATE
 // ===============================
 
-let state = loadState();
-
-let timerInterval = null;
-
-
-// ===============================
-// DEFAULT STATE
-// ===============================
-
-function defaultState() {
+function getDefaultState() {
   return {
     mode: "none",
 
     workStartedAt: null,
 
-    entertainmentStartedAt: null,
     entertainmentEndsAt: null,
 
     cooldownEndsAt: null
@@ -30,45 +22,31 @@ function defaultState() {
 }
 
 
-// ===============================
-// STORAGE
-// ===============================
-
 function loadState() {
-
   try {
-
-    const saved =
-      localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEY);
 
     if (!saved) {
-      return defaultState();
+      return getDefaultState();
     }
 
     return {
-      ...defaultState(),
+      ...getDefaultState(),
       ...JSON.parse(saved)
     };
 
   } catch (error) {
-
-    console.error(
-      "Failed to load state:",
-      error
-    );
-
-    return defaultState();
+    console.error("State loading failed:", error);
+    return getDefaultState();
   }
 }
 
 
 function saveState() {
-
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify(state)
   );
-
 }
 
 
@@ -102,33 +80,25 @@ const cooldownText =
 
 
 // ===============================
-// SCREEN MANAGEMENT
+// SCREEN CONTROL
 // ===============================
 
 function hideAllScreens() {
-
   homeScreen.classList.add("hidden");
-
   entertainmentSetup.classList.add("hidden");
-
   sessionScreen.classList.add("hidden");
-
   blockedScreen.classList.add("hidden");
-
 }
 
 
 function showScreen(screen) {
-
   hideAllScreens();
-
   screen.classList.remove("hidden");
-
 }
 
 
 // ===============================
-// WORK MODE
+// WORK
 // ===============================
 
 function startWork() {
@@ -136,48 +106,36 @@ function startWork() {
   clearInterval(timerInterval);
 
   /*
-   * Only create a new start time if
-   * we aren't already in Work mode.
-   *
-   * This means reopening the app doesn't
-   * reset the stopwatch.
+   * Only create a timestamp if we aren't
+   * already in Work mode.
    */
 
-  if (state.mode !== "work") {
-
-    state.workStartedAt =
-      Date.now();
-
+  if (
+    state.mode !== "work" ||
+    !state.workStartedAt
+  ) {
+    state.workStartedAt = Date.now();
   }
 
   state.mode = "work";
 
   /*
-   * IMPORTANT:
-   * We do NOT delete cooldownEndsAt.
+   * Entertainment session is definitely over.
    *
-   * Entertainment can remain on cooldown
-   * while Work is active.
+   * BUT cooldown is preserved.
    */
-
-  state.entertainmentStartedAt = null;
 
   state.entertainmentEndsAt = null;
 
   saveState();
 
-  document.getElementById(
-    "sessionIcon"
-  ).textContent = "📚";
+  document.getElementById("sessionIcon").textContent = "📚";
 
-  document.getElementById(
-    "sessionTitle"
-  ).textContent = "Work Mode";
+  document.getElementById("sessionTitle").textContent =
+    "Work Mode";
 
-  document.getElementById(
-    "sessionDescription"
-  ).textContent =
-    "Work mode is active.";
+  document.getElementById("sessionDescription").textContent =
+    "Unlimited work time.";
 
   statusText.textContent =
     "Work mode active.";
@@ -185,13 +143,8 @@ function startWork() {
   showScreen(sessionScreen);
 
   startWorkStopwatch();
-
 }
 
-
-// ===============================
-// WORK STOPWATCH
-// ===============================
 
 function startWorkStopwatch() {
 
@@ -199,29 +152,22 @@ function startWorkStopwatch() {
 
   updateWorkStopwatch();
 
-  timerInterval =
-    setInterval(
-      updateWorkStopwatch,
-      1000
-    );
-
+  timerInterval = setInterval(
+    updateWorkStopwatch,
+    1000
+  );
 }
 
 
 function updateWorkStopwatch() {
 
   if (!state.workStartedAt) {
-
-    state.workStartedAt =
-      Date.now();
-
+    state.workStartedAt = Date.now();
     saveState();
-
   }
 
   const elapsed =
-    Date.now() -
-    state.workStartedAt;
+    Date.now() - state.workStartedAt;
 
   timer.textContent =
     formatTime(elapsed);
@@ -237,14 +183,7 @@ function openEntertainmentSetup() {
 
   if (isCooldownActive()) {
 
-    /*
-     * Don't allow entertainment during
-     * the cooldown.
-     */
-
-    showScreen(blockedScreen);
-
-    startCooldownTimer();
+    showBlockedScreen();
 
     return;
   }
@@ -253,80 +192,51 @@ function openEntertainmentSetup() {
 
   statusText.textContent =
     "Choose your entertainment time.";
-
 }
 
 
 // ===============================
-// START ENTERTAINMENT
+// ENTERTAINMENT
 // ===============================
 
 function startEntertainment(minutes) {
 
-  /*
-   * Safety check.
-   */
-
   if (isCooldownActive()) {
 
-    showScreen(blockedScreen);
-
-    startCooldownTimer();
+    showBlockedScreen();
 
     return;
   }
 
-  const now =
-    Date.now();
+  clearInterval(timerInterval);
 
-  const duration =
-    minutes * 60 * 1000;
+  const now = Date.now();
 
-  state.mode =
-    "entertainment";
-
-  state.entertainmentStartedAt =
-    now;
-
-  state.entertainmentEndsAt =
-    now + duration;
-
-  /*
-   * Work stopwatch is no longer
-   * the active session.
-   */
+  state.mode = "entertainment";
 
   state.workStartedAt = null;
 
+  state.entertainmentEndsAt =
+    now + minutes * 60 * 1000;
+
   saveState();
 
-  document.getElementById(
-    "sessionIcon"
-  ).textContent = "🎮";
+  document.getElementById("sessionIcon").textContent = "🎮";
 
-  document.getElementById(
-    "sessionTitle"
-  ).textContent =
+  document.getElementById("sessionTitle").textContent =
     "Entertainment Mode";
 
-  document.getElementById(
-    "sessionDescription"
-  ).textContent =
+  document.getElementById("sessionDescription").textContent =
     `${minutes} minute session`;
-
-  showScreen(sessionScreen);
 
   statusText.textContent =
     "Entertainment session active.";
 
-  startEntertainmentTimer();
+  showScreen(sessionScreen);
 
+  startEntertainmentTimer();
 }
 
-
-// ===============================
-// ENTERTAINMENT TIMER
-// ===============================
 
 function startEntertainmentTimer() {
 
@@ -334,20 +244,17 @@ function startEntertainmentTimer() {
 
   updateEntertainmentTimer();
 
-  timerInterval =
-    setInterval(
-      updateEntertainmentTimer,
-      1000
-    );
-
+  timerInterval = setInterval(
+    updateEntertainmentTimer,
+    1000
+  );
 }
 
 
 function updateEntertainmentTimer() {
 
   const remaining =
-    state.entertainmentEndsAt -
-    Date.now();
+    state.entertainmentEndsAt - Date.now();
 
   if (remaining <= 0) {
 
@@ -358,58 +265,40 @@ function updateEntertainmentTimer() {
 
   timer.textContent =
     formatTime(remaining);
-
 }
 
-
-// ===============================
-// END ENTERTAINMENT
-// ===============================
 
 function endEntertainment() {
 
   clearInterval(timerInterval);
 
-  const cooldownEnds =
-    Date.now() + COOLDOWN_MS;
+  state.mode = "blocked";
 
-  state.mode =
-    "blocked";
-
-  state.entertainmentStartedAt =
-    null;
-
-  state.entertainmentEndsAt =
-    null;
+  state.entertainmentEndsAt = null;
 
   state.cooldownEndsAt =
-    cooldownEnds;
+    Date.now() + COOLDOWN_MS;
 
   saveState();
 
-  statusText.textContent =
-    "Entertainment is on cooldown.";
-
-  showScreen(blockedScreen);
+  showBlockedScreen();
 
   startCooldownTimer();
-
 }
 
 
 // ===============================
-// COOLDOWN
+// BLOCKED
 // ===============================
 
-function isCooldownActive() {
+function showBlockedScreen() {
 
-  if (!state.cooldownEndsAt) {
-    return false;
-  }
+  showScreen(blockedScreen);
 
-  return Date.now() <
-    state.cooldownEndsAt;
+  statusText.textContent =
+    "Entertainment is on cooldown.";
 
+  startCooldownTimer();
 }
 
 
@@ -417,61 +306,62 @@ function startCooldownTimer() {
 
   clearInterval(timerInterval);
 
-  updateCooldownDisplay();
+  updateCooldown();
 
-  timerInterval =
-    setInterval(
-      updateCooldownDisplay,
-      1000
-    );
+  /*
+   * This interval only exists while the
+   * PWA is open.
+   *
+   * The actual cooldown is based on the
+   * timestamp, so closing the PWA doesn't
+   * pause it.
+   */
 
+  timerInterval = setInterval(
+    updateCooldown,
+    1000
+  );
 }
 
 
-function updateCooldownDisplay() {
+function updateCooldown() {
 
   if (!state.cooldownEndsAt) {
 
-    cooldownText.textContent =
-      "";
+    cooldownTimer.textContent = "00:00";
+
+    cooldownText.textContent = "";
 
     return;
   }
 
   const remaining =
-    state.cooldownEndsAt -
-    Date.now();
+    state.cooldownEndsAt - Date.now();
+
 
   if (remaining <= 0) {
 
-    state.cooldownEndsAt =
-      null;
-
-    /*
-     * Only change the mode if we are
-     * actually on the blocked screen.
-     *
-     * If Work is active, Work stays active.
-     */
+    state.cooldownEndsAt = null;
 
     if (state.mode === "blocked") {
-
       state.mode = "none";
-
     }
 
     saveState();
 
     clearInterval(timerInterval);
 
+    cooldownTimer.textContent = "00:00";
+
+    cooldownText.textContent = "";
+
     if (state.mode === "none") {
-
       showHome();
-
     }
 
     return;
   }
+
 
   const formatted =
     formatTime(remaining);
@@ -481,22 +371,25 @@ function updateCooldownDisplay() {
 
   cooldownText.textContent =
     `Entertainment cooldown: ${formatted}`;
+}
 
+
+function isCooldownActive() {
+
+  return (
+    state.cooldownEndsAt !== null &&
+    Date.now() < state.cooldownEndsAt
+  );
 }
 
 
 // ===============================
-// EXIT SESSION
+// EXIT
 // ===============================
 
 function exitSession() {
 
   clearInterval(timerInterval);
-
-  /*
-   * Ending Work does NOT affect
-   * entertainment cooldown.
-   */
 
   if (state.mode === "work") {
 
@@ -504,28 +397,21 @@ function exitSession() {
 
     state.workStartedAt = null;
 
-  }
+  } else if (state.mode === "entertainment") {
 
-  /*
-   * Ending entertainment manually:
-   * for V0.1, treat it as ending the
-   * entertainment session normally.
-   */
-
-  else if (
-    state.mode === "entertainment"
-  ) {
+    /*
+     * Manually ending entertainment starts
+     * the cooldown.
+     */
 
     endEntertainment();
 
     return;
-
   }
 
   saveState();
 
   showHome();
-
 }
 
 
@@ -543,49 +429,28 @@ function showHome() {
     "Choose how you're using YouTube.";
 
   updateHomeCooldown();
-
 }
 
 
-// ===============================
-// HOME COOLDOWN DISPLAY
-// ===============================
-
 function updateHomeCooldown() {
-
-  if (!state.cooldownEndsAt) {
-
-    cooldownText.textContent =
-      "";
-
-    return;
-  }
 
   if (!isCooldownActive()) {
 
-    state.cooldownEndsAt =
-      null;
-
-    saveState();
-
-    cooldownText.textContent =
-      "";
+    cooldownText.textContent = "";
 
     return;
   }
 
   const remaining =
-    state.cooldownEndsAt -
-    Date.now();
+    state.cooldownEndsAt - Date.now();
 
   cooldownText.textContent =
     `Entertainment cooldown: ${formatTime(remaining)}`;
-
 }
 
 
 // ===============================
-// TIME FORMAT
+// TIME
 // ===============================
 
 function formatTime(milliseconds) {
@@ -593,15 +458,11 @@ function formatTime(milliseconds) {
   const totalSeconds =
     Math.max(
       0,
-      Math.floor(
-        milliseconds / 1000
-      )
+      Math.floor(milliseconds / 1000)
     );
 
   const hours =
-    Math.floor(
-      totalSeconds / 3600
-    );
+    Math.floor(totalSeconds / 3600);
 
   const minutes =
     Math.floor(
@@ -611,145 +472,30 @@ function formatTime(milliseconds) {
   const seconds =
     totalSeconds % 60;
 
+
   if (hours > 0) {
 
     return (
-      String(hours).padStart(2, "0")
-      + ":"
-      + String(minutes).padStart(2, "0")
-      + ":"
-      + String(seconds).padStart(2, "0")
+      String(hours).padStart(2, "0") +
+      ":" +
+      String(minutes).padStart(2, "0") +
+      ":" +
+      String(seconds).padStart(2, "0")
     );
 
   }
 
+
   return (
-    String(minutes).padStart(2, "0")
-    + ":"
-    + String(seconds).padStart(2, "0")
+    String(minutes).padStart(2, "0") +
+    ":" +
+    String(seconds).padStart(2, "0")
   );
-
 }
 
 
 // ===============================
-// STARTUP
-// ===============================
-
-function initialize() {
-
-  /*
-   * 1. Active Entertainment
-   */
-
-  if (
-    state.mode === "entertainment" &&
-    state.entertainmentEndsAt
-  ) {
-
-    if (
-      Date.now() <
-      state.entertainmentEndsAt
-    ) {
-
-      showScreen(sessionScreen);
-
-      document.getElementById(
-        "sessionIcon"
-      ).textContent = "🎮";
-
-      document.getElementById(
-        "sessionTitle"
-      ).textContent =
-        "Entertainment Mode";
-
-      document.getElementById(
-        "sessionDescription"
-      ).textContent =
-        "Entertainment session active.";
-
-      startEntertainmentTimer();
-
-      return;
-    }
-
-    /*
-     * Entertainment expired while
-     * the app was closed.
-     */
-
-    endEntertainment();
-
-    return;
-  }
-
-
-  /*
-   * 2. Work mode
-   *
-   * This MUST be checked before the
-   * cooldown.
-   */
-
-  if (
-    state.mode === "work" &&
-    state.workStartedAt
-  ) {
-
-    showScreen(sessionScreen);
-
-    document.getElementById(
-      "sessionIcon"
-    ).textContent = "📚";
-
-    document.getElementById(
-      "sessionTitle"
-    ).textContent =
-      "Work Mode";
-
-    document.getElementById(
-      "sessionDescription"
-    ).textContent =
-      "Work mode is active.";
-
-    startWorkStopwatch();
-
-    return;
-  }
-
-
-  /*
-   * 3. Entertainment cooldown
-   */
-
-  if (
-    state.mode === "blocked" &&
-    isCooldownActive()
-  ) {
-
-    showScreen(blockedScreen);
-
-    startCooldownTimer();
-
-    return;
-  }
-
-
-  /*
-   * 4. Nothing active
-   */
-
-  state.mode = "none";
-
-  saveState();
-
-  showHome();
-
-}
-
-
-// ===============================
-// EVENT LISTENERS
+// BUTTONS
 // ===============================
 
 document
@@ -801,9 +547,7 @@ document
       () => {
 
         const minutes =
-          Number(
-            button.dataset.minutes
-          );
+          Number(button.dataset.minutes);
 
         startEntertainment(minutes);
 
@@ -814,8 +558,107 @@ document
 
 
 // ===============================
-// APP START
+// STARTUP
 // ===============================
+
+function initialize() {
+
+  /*
+   * ACTIVE WORK
+   */
+
+  if (
+    state.mode === "work" &&
+    state.workStartedAt
+  ) {
+
+    document.getElementById("sessionIcon").textContent = "📚";
+
+    document.getElementById("sessionTitle").textContent =
+      "Work Mode";
+
+    document.getElementById("sessionDescription").textContent =
+      "Unlimited work time.";
+
+    statusText.textContent =
+      "Work mode active.";
+
+    showScreen(sessionScreen);
+
+    startWorkStopwatch();
+
+    return;
+  }
+
+
+  /*
+   * ACTIVE ENTERTAINMENT
+   */
+
+  if (
+    state.mode === "entertainment" &&
+    state.entertainmentEndsAt
+  ) {
+
+    if (
+      Date.now() <
+      state.entertainmentEndsAt
+    ) {
+
+      document.getElementById("sessionIcon").textContent = "🎮";
+
+      document.getElementById("sessionTitle").textContent =
+        "Entertainment Mode";
+
+      document.getElementById("sessionDescription").textContent =
+        "Entertainment session active.";
+
+      statusText.textContent =
+        "Entertainment session active.";
+
+      showScreen(sessionScreen);
+
+      startEntertainmentTimer();
+
+      return;
+    }
+
+    /*
+     * Session expired while app was closed.
+     */
+
+    endEntertainment();
+
+    return;
+  }
+
+
+  /*
+   * COOLDOWN
+   */
+
+  if (
+    state.mode === "blocked" &&
+    isCooldownActive()
+  ) {
+
+    showBlockedScreen();
+
+    return;
+  }
+
+
+  /*
+   * Nothing active.
+   */
+
+  state.mode = "none";
+
+  saveState();
+
+  showHome();
+}
+
 
 initialize();
 
@@ -836,520 +679,4 @@ if ("serviceWorker" in navigator) {
       );
 
     });
-
 }
-  try {
-
-    const saved =
-      localStorage.getItem(STORAGE_KEY);
-
-    if (!saved) {
-      return defaultState();
-    }
-
-    return {
-      ...defaultState(),
-      ...JSON.parse(saved)
-    };
-
-  } catch (error) {
-
-    console.error(
-      "Failed to load state:",
-      error
-    );
-
-    return defaultState();
-  }
-
-}
-
-
-function saveState() {
-
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(state)
-  );
-
-}
-
-
-// ===============================
-// ELEMENTS
-// ===============================
-
-const homeScreen =
-  document.getElementById("homeScreen");
-
-const entertainmentSetup =
-  document.getElementById("entertainmentSetup");
-
-const sessionScreen =
-  document.getElementById("sessionScreen");
-
-const blockedScreen =
-  document.getElementById("blockedScreen");
-
-const statusText =
-  document.getElementById("statusText");
-
-const timer =
-  document.getElementById("timer");
-
-const cooldownTimer =
-  document.getElementById("cooldownTimer");
-
-const cooldownText =
-  document.getElementById("cooldownText");
-
-
-// ===============================
-// SCREEN MANAGEMENT
-// ===============================
-
-function hideAllScreens() {
-
-  homeScreen.classList.add("hidden");
-
-  entertainmentSetup.classList.add("hidden");
-
-  sessionScreen.classList.add("hidden");
-
-  blockedScreen.classList.add("hidden");
-
-}
-
-
-function showScreen(screen) {
-
-  hideAllScreens();
-
-  screen.classList.remove("hidden");
-
-}
-
-
-// ===============================
-// WORK MODE
-// ===============================
-
-function startWork() {
-
-  clearInterval(timerInterval);
-
-  state.mode = "work";
-
-  state.entertainmentEndsAt = null;
-
-  saveState();
-
-  document.getElementById(
-    "sessionIcon"
-  ).textContent = "📚";
-
-  document.getElementById(
-    "sessionTitle"
-  ).textContent = "Work Mode";
-
-  document.getElementById(
-    "sessionDescription"
-  ).textContent =
-    "Unlimited access for productive work.";
-
-  timer.textContent = "∞";
-
-  statusText.textContent =
-    "Work mode active.";
-
-  showScreen(sessionScreen);
-
-}
-
-
-// ===============================
-// ENTERTAINMENT SETUP
-// ===============================
-
-function openEntertainmentSetup() {
-
-  if (isCooldownActive()) {
-
-    updateCooldownDisplay();
-
-    return;
-  }
-
-  showScreen(entertainmentSetup);
-
-  statusText.textContent =
-    "Choose your entertainment time.";
-
-}
-
-
-// ===============================
-// START ENTERTAINMENT
-// ===============================
-
-function startEntertainment(minutes) {
-
-  const now = Date.now();
-
-  const duration =
-    minutes * 60 * 1000;
-
-  state.mode = "entertainment";
-
-  state.entertainmentEndsAt =
-    now + duration;
-
-  saveState();
-
-  document.getElementById(
-    "sessionIcon"
-  ).textContent = "🎮";
-
-  document.getElementById(
-    "sessionTitle"
-  ).textContent =
-    "Entertainment Mode";
-
-  document.getElementById(
-    "sessionDescription"
-  ).textContent =
-    `${minutes} minute session`;
-
-  showScreen(sessionScreen);
-
-  statusText.textContent =
-    "Entertainment session active.";
-
-  startEntertainmentTimer();
-
-}
-
-
-// ===============================
-// ENTERTAINMENT TIMER
-// ===============================
-
-function startEntertainmentTimer() {
-
-  clearInterval(timerInterval);
-
-  updateEntertainmentTimer();
-
-  timerInterval =
-    setInterval(
-      updateEntertainmentTimer,
-      1000
-    );
-
-}
-
-
-function updateEntertainmentTimer() {
-
-  const remaining =
-    state.entertainmentEndsAt -
-    Date.now();
-
-  if (remaining <= 0) {
-
-    endEntertainment();
-
-    return;
-  }
-
-  timer.textContent =
-    formatTime(remaining);
-
-}
-
-
-// ===============================
-// END ENTERTAINMENT
-// ===============================
-
-function endEntertainment() {
-
-  clearInterval(timerInterval);
-
-  const cooldownEnds =
-    Date.now() + COOLDOWN_MS;
-
-  state.mode = "blocked";
-
-  state.entertainmentEndsAt = null;
-
-  state.cooldownEndsAt =
-    cooldownEnds;
-
-  saveState();
-
-  statusText.textContent =
-    "Entertainment is on cooldown.";
-
-  showScreen(blockedScreen);
-
-  startCooldownTimer();
-
-}
-
-
-// ===============================
-// COOLDOWN
-// ===============================
-
-function isCooldownActive() {
-
-  if (!state.cooldownEndsAt) {
-    return false;
-  }
-
-  return Date.now() <
-    state.cooldownEndsAt;
-
-}
-
-
-function startCooldownTimer() {
-
-  clearInterval(timerInterval);
-
-  updateCooldownDisplay();
-
-  timerInterval =
-    setInterval(
-      updateCooldownDisplay,
-      1000
-    );
-
-}
-
-
-function updateCooldownDisplay() {
-
-  const remaining =
-    state.cooldownEndsAt -
-    Date.now();
-
-  if (remaining <= 0) {
-
-    state.cooldownEndsAt = null;
-
-    state.mode = "none";
-
-    saveState();
-
-    clearInterval(timerInterval);
-
-    showHome();
-
-    return;
-  }
-
-  const formatted =
-    formatTime(remaining);
-
-  cooldownTimer.textContent =
-    formatted;
-
-  cooldownText.textContent =
-    `Cooldown remaining: ${formatted}`;
-
-}
-
-
-// ===============================
-// EXIT SESSION
-// ===============================
-
-function exitSession() {
-
-  clearInterval(timerInterval);
-
-  state.mode = "none";
-
-  state.entertainmentEndsAt = null;
-
-  saveState();
-
-  showHome();
-
-}
-
-
-// ===============================
-// HOME
-// ===============================
-
-function showHome() {
-
-  updateCooldownDisplay();
-
-  showScreen(homeScreen);
-
-  statusText.textContent =
-    "Choose how you're using YouTube.";
-
-}
-
-
-// ===============================
-// TIME FORMAT
-// ===============================
-
-function formatTime(milliseconds) {
-
-  const totalSeconds =
-    Math.ceil(
-      milliseconds / 1000
-    );
-
-  const minutes =
-    Math.floor(
-      totalSeconds / 60
-    );
-
-  const seconds =
-    totalSeconds % 60;
-
-  return (
-    String(minutes).padStart(2, "0")
-    +
-    ":"
-    +
-    String(seconds).padStart(2, "0")
-  );
-
-}
-
-
-// ===============================
-// EVENT LISTENERS
-// ===============================
-
-document
-  .getElementById("workButton")
-  .addEventListener(
-    "click",
-    startWork
-  );
-
-
-document
-  .getElementById("blockedWorkButton")
-  .addEventListener(
-    "click",
-    startWork
-  );
-
-
-document
-  .getElementById("entertainmentButton")
-  .addEventListener(
-    "click",
-    openEntertainmentSetup
-  );
-
-
-document
-  .getElementById("backButton")
-  .addEventListener(
-    "click",
-    showHome
-  );
-
-
-document
-  .getElementById("exitButton")
-  .addEventListener(
-    "click",
-    exitSession
-  );
-
-
-document
-  .querySelectorAll(".time-button")
-  .forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        const minutes =
-          Number(
-            button.dataset.minutes
-          );
-
-        startEntertainment(minutes);
-
-      }
-    );
-
-  });
-
-
-// ===============================
-// APP STARTUP
-// ===============================
-
-function initialize() {
-
-  if (
-    state.mode === "entertainment" &&
-    state.entertainmentEndsAt
-  ) {
-
-    if (
-      Date.now() <
-      state.entertainmentEndsAt
-    ) {
-
-      startEntertainmentTimer();
-
-      showScreen(sessionScreen);
-
-      return;
-    }
-
-    endEntertainment();
-
-    return;
-  }
-
-
-  if (
-    state.cooldownEndsAt &&
-    isCooldownActive()
-  ) {
-
-    showScreen(blockedScreen);
-
-    startCooldownTimer();
-
-    return;
-  }
-
-
-  state.mode = "none";
-
-  saveState();
-
-  showHome();
-
-}
-
-initialize();
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("./sw.js")
-    .catch(error => {
-      console.error(
-        "Service worker registration failed:",
-        error
-      );
-    });
-}
-
